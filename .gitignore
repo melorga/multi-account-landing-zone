@@ -2,9 +2,7 @@
 *.tfstate
 *.tfstate.*
 *.tfvars
-*.tfvars.json
 *.tfplan
-plan.bin
 .terraform/
 .terraform.lock.hcl
 crash.log
@@ -13,9 +11,8 @@ override.tf.json
 *_override.tf
 *_override.tf.json
 
-# AWS Organization specific
-account-ids.txt
-organization-config.json
+# Terragrunt
+.terragrunt-cache/
 
 # IDE
 .vscode/
@@ -31,17 +28,18 @@ Thumbs.db
 # Logs
 *.log
 
-# Sensitive configuration
-*.pem
-*.key
-secrets.yaml
-secrets.yml
-organization-secrets/
-
-# Environment variables
+# Runtime
+node_modules/
+venv/
+__pycache__/
+*.pyc
 .env
 .env.local
-.env.production
 
-# Service Catalog
-service-catalog-products/portfolios/*.zip
+# Archives
+*.zip
+*.tar.gz
+
+# Test outputs
+test-results/
+coverage/
