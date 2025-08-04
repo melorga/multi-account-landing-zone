@@ -1,0 +1,193 @@
+name: Deploy Multi-Account Landing Zone
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  TF_VERSION: '1.8.5'
+  AWS_REGION: 'us-east-1'
+
+jobs:
+  terraform-validate:
+    name: Terraform Validate
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: ${{ env.TF_VERSION }}
+
+    - name: Terraform Format Check
+      run: |
+        terraform fmt -check -recursive .
+        if [ $? -ne 0 ]; then
+          echo "Some files need formatting. Run 'terraform fmt -recursive .' to fix."
+          exit 1
+        fi
+
+    - name: Terraform Init (Module)
+      run: terraform init
+      working-directory: ./modules/landing-zone
+
+    - name: Terraform Validate (Module)
+      run: terraform validate
+      working-directory: ./modules/landing-zone
+
+    - name: Terraform Init (Example)
+      run: terraform init
+      working-directory: ./examples/basic
+
+    - name: Terraform Validate (Example)
+      run: terraform validate
+      working-directory: ./examples/basic
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: terraform-validate
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Run Checkov scan
+      uses: bridgecrewio/checkov-action@master
+      with:
+        directory: .
+        framework: terraform
+        output_format: sarif
+        output_file_path: checkov-results.sarif
+
+    - name: Upload Checkov scan results to GitHub Security tab
+      uses: github/codeql-action/upload-sarif@v3
+      if: always()
+      with:
+        sarif_file: checkov-results.sarif
+
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+
+    - name: Upload Trivy scan results to GitHub Security tab
+      uses: github/codeql-action/upload-sarif@v3
+      if: always()
+      with:
+        sarif_file: 'trivy-results.sarif'
+
+  terraform-plan:
+    name: Terraform Plan
+    runs-on: ubuntu-latest
+    needs: [terraform-validate, security-scan]
+    if: github.event_name == 'pull_request'
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: ${{ env.TF_VERSION }}
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Terraform Init
+      run: terraform init
+      working-directory: ./examples/basic
+
+    - name: Terraform Plan
+      run: terraform plan -no-color
+      working-directory: ./examples/basic
+      continue-on-error: true
+
+  terraform-apply:
+    name: Terraform Apply
+    runs-on: ubuntu-latest
+    needs: [terraform-validate, security-scan]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment: production
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: ${{ env.TF_VERSION }}
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Terraform Init
+      run: terraform init
+      working-directory: ./examples/basic
+
+    - name: Terraform Plan
+      run: terraform plan -out=tfplan
+      working-directory: ./examples/basic
+
+    - name: Terraform Apply
+      run: terraform apply -auto-approve tfplan
+      working-directory: ./examples/basic
+
+    - name: Get Organization Info
+      run: |
+        ORG_ID=$(terraform output -raw organization_id)
+        MASTER_ACCOUNT_ID=$(terraform output -raw master_account_id)
+        echo "Organization ID: $ORG_ID"
+        echo "Master Account ID: $MASTER_ACCOUNT_ID"
+      working-directory: ./examples/basic
+
+  compliance-check:
+    name: Compliance Check
+    runs-on: ubuntu-latest
+    needs: terraform-apply
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Check Organization Status
+      run: |
+        echo "Checking AWS Organizations status..."
+        aws organizations describe-organization || echo "Organization not found or not accessible"
+
+    - name: Check Service Control Policies
+      run: |
+        echo "Listing Service Control Policies..."
+        aws organizations list-policies --filter SERVICE_CONTROL_POLICY || echo "SCPs not accessible"
+
+    - name: Check CloudTrail Status
+      run: |
+        echo "Checking CloudTrail status..."
+        aws cloudtrail describe-trails --region ${{ env.AWS_REGION }} || echo "CloudTrail not accessible"
