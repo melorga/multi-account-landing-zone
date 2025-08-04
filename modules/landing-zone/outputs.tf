@@ -50,8 +50,8 @@ output "account_emails" {
 output "service_control_policies" {
   description = "Map of Service Control Policy names to policy IDs"
   value = {
-    deny_root_user         = aws_organizations_policy.deny_root_user.id
-    require_mfa           = aws_organizations_policy.require_mfa.id
+    deny_root_user          = aws_organizations_policy.deny_root_user.id
+    require_mfa             = aws_organizations_policy.require_mfa.id
     deny_region_restriction = aws_organizations_policy.deny_region_restriction.id
   }
 }
@@ -70,12 +70,12 @@ output "account_structure" {
   description = "Complete account structure information"
   value = {
     for k, v in aws_organizations_account.accounts : k => {
-      id          = v.id
-      arn         = v.arn
-      email       = v.email
-      name        = v.name
-      status      = v.status
-      parent_ou   = v.parent_id
+      id           = v.id
+      arn          = v.arn
+      email        = v.email
+      name         = v.name
+      status       = v.status
+      parent_ou    = v.parent_id
       account_type = k
     }
   }

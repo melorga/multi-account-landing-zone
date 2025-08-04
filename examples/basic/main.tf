@@ -20,8 +20,8 @@ module "landing_zone" {
   source = "../../modules/landing-zone"
 
   organization_prefix = var.organization_prefix
-  domain_name        = var.domain_name
-  environment        = var.environment
+  domain_name         = var.domain_name
+  environment         = var.environment
 
   # Organization settings
   create_organization = var.create_organization
@@ -32,8 +32,8 @@ module "landing_zone" {
 
   # Security services
   enable_cloudtrail   = true
-  enable_config      = true
-  enable_guardduty   = true
+  enable_config       = true
+  enable_guardduty    = true
   enable_security_hub = true
 
   # CloudTrail settings

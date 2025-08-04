@@ -31,7 +31,7 @@ variable "create_organization" {
 variable "create_accounts" {
   description = "Whether to create member accounts"
   type        = bool
-  default     = false  # Set to false for demo to avoid creating real accounts
+  default     = false # Set to false for demo to avoid creating real accounts
 }
 
 variable "allowed_regions" {

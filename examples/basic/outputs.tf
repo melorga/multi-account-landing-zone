@@ -19,7 +19,7 @@ output "security_ou_id" {
 }
 
 output "workloads_ou_id" {
-  description = "The Workloads organizational unit ID"  
+  description = "The Workloads organizational unit ID"
   value       = module.landing_zone.workloads_ou_id
 }
 
