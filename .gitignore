@@ -43,6 +43,7 @@ __pycache__/
 # Test outputs
 test-results/
 coverage/
+test-ci-local.sh
 
 # Documentation
 *.md
