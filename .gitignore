@@ -49,3 +49,9 @@ test-ci-local.sh
 *.md
 !README.md
 !docs/README.md
+
+# Private deployment files (DO NOT COMMIT)
+DEPLOYMENT_CHECKLIST.md
+*_CHECKLIST.md
+*CREDENTIALS*
+*PRIVATE*
