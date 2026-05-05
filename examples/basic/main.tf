@@ -1,13 +1,13 @@
 terraform {
-  required_version = ">= 1.0"
+  required_version = ">= 1.9, < 2.0"
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 5.0"
+      version = "~> 6.0"
     }
     random = {
       source  = "hashicorp/random"
-      version = "~> 3.0"
+      version = "~> 3.6"
     }
   }
 }
@@ -35,6 +35,10 @@ module "landing_zone" {
   enable_config       = true
   enable_guardduty    = true
   enable_security_hub = true
+
+  # Identity Center (off by default; flip on once IdC is enabled in
+  # the management account).
+  enable_identity_center = false
 
   # CloudTrail settings
   cloudtrail_retention_days = 365
