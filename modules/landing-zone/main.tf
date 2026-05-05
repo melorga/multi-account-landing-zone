@@ -569,6 +569,10 @@ resource "aws_securityhub_account" "management" {
   count = var.enable_security_hub ? 1 : 0
 }
 
+# TODO: AWS provider 6.x is deprecating the _organization_admin_account
+# pattern in favor of central configuration; track
+# https://github.com/hashicorp/terraform-provider-aws/issues for the
+# migration timeline.
 resource "aws_securityhub_organization_admin_account" "this" {
   count = var.enable_security_hub && var.create_accounts ? 1 : 0
 
