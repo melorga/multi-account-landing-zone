@@ -29,9 +29,9 @@ variable "create_accounts" {
 }
 
 variable "close_accounts_on_deletion" {
-  description = "Whether to close accounts when Terraform resource is destroyed"
+  description = "Deprecated: accounts are now always closed on deletion. Retained for backwards compatibility."
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "allowed_regions" {
@@ -51,7 +51,7 @@ variable "enable_cloudtrail" {
 }
 
 variable "enable_config" {
-  description = "Enable AWS Config organization-wide"
+  description = "Enable AWS Config organization-wide (registers the security account as the delegated admin for config-multiaccountsetup)"
   type        = bool
   default     = true
 }
@@ -66,6 +66,12 @@ variable "enable_security_hub" {
   description = "Enable Security Hub organization-wide"
   type        = bool
   default     = true
+}
+
+variable "enable_identity_center" {
+  description = "Provision IAM Identity Center permission sets (requires Identity Center to already be enabled in the management account)"
+  type        = bool
+  default     = false
 }
 
 variable "cloudtrail_retention_days" {
